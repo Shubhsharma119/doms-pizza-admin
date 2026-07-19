@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dom's Pizza — Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Work+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #15100D;
+    --surface: #1F1712;
+    --surface-2: #291F18;
+    --cream: #F7EDE0;
+    --cream-dim: #B8A996;
+    --tomato: #E8491D;
+    --gold: #E3A857;
+    --basil: #5C8A46;
+    --blue: #4A7FB5;
+    --muted: #6B6058;
+    --line: rgba(247,237,224,0.1);
+    --shadow: 0 12px 30px rgba(0,0,0,0.4);
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: var(--bg); color: var(--cream);
+    font-family:'Work Sans',sans-serif; min-height:100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1,h2,h3,.display{ font-family:'Anton',sans-serif; font-weight:400; letter-spacing:.02em; text-transform:uppercase; }
+  button{ font-family:inherit; cursor:pointer; border:none; }
+  input,select,textarea{ font-family:inherit; }
+
+  /* ============ LOGIN ============ */
+  #loginScreen{
+    min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px;
+  }
+  .login-card{
+    background: var(--surface); border:1px solid var(--line); border-radius:20px;
+    padding: 36px 28px; width:100%; max-width:360px; box-shadow: var(--shadow);
+  }
+  .login-mark{
+    width:56px; height:56px; border-radius:50%; margin: 0 auto 18px;
+    background: radial-gradient(circle at 35% 30%, var(--gold), var(--tomato) 65%);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Anton',sans-serif; font-size:26px; color:#1B1410;
+  }
+  .login-card h1{ text-align:center; font-size:22px; margin:0 0 4px; }
+  .login-sub{ text-align:center; color:var(--cream-dim); font-size:12.5px; margin-bottom:24px; }
+  .field{ margin-bottom:14px; }
+  .field label{ display:block; font-size:11.5px; font-weight:700; color:var(--cream-dim); margin-bottom:6px; text-transform:uppercase; letter-spacing:.04em; }
+  .field input{
+    width:100%; background:var(--surface-2); border:1px solid var(--line); color:var(--cream);
+    padding:12px 14px; border-radius:10px; font-size:14px; outline:none;
+  }
+  .field input:focus{ border-color:var(--tomato); }
+  .btn-primary{
+    width:100%; background:var(--tomato); color:#fff; font-weight:800; font-size:14.5px;
+    padding:14px; border-radius:12px; margin-top:6px;
+  }
+  .btn-primary:disabled{ opacity:.5; }
+  .btn-primary:active{ transform:scale(0.98); }
+  .login-error{ color:var(--tomato); font-size:12.5px; margin-top:10px; text-align:center; display:none; }
+
+  /* ============ APP SHELL ============ */
+  #appScreen{ display:none; min-height:100vh; padding-bottom: 76px; }
+  .topbar{
+    position:sticky; top:0; z-index:30;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 20px; background:rgba(21,16,13,0.97); backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--line);
+  }
+  .brand{ display:flex; align-items:center; gap:10px; }
+  .brand-mark{
+    width:32px; height:32px; border-radius:50%;
+    background: radial-gradient(circle at 35% 30%, var(--gold), var(--tomato) 65%);
+    display:flex; align-items:center; justify-content:center; font-family:'Anton',sans-serif; font-size:15px; color:#1B1410;
+  }
+  .brand-name{ font-size:16px; letter-spacing:.03em; }
+  .brand-name span{ color:var(--tomato); }
+  .brand-name small{ display:block; font-family:'Work Sans',sans-serif; text-transform:none; font-size:10.5px; color:var(--cream-dim); font-weight:600; letter-spacing:0; }
+  .logout-btn{ background:var(--surface-2); color:var(--cream-dim); padding:8px 14px; border-radius:999px; font-size:12px; font-weight:700; border:1px solid var(--line); }
+
+  /* ============ TABS (bottom nav on mobile, top on desktop) ============ */
+  .tabbar{
+    position:fixed; bottom:0; left:0; right:0; z-index:40;
+    display:flex; background:var(--surface); border-top:1px solid var(--line);
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+  }
+  .tab-btn{
+    flex:1; background:none; color:var(--cream-dim); padding:10px 4px; border-radius:12px;
+    display:flex; flex-direction:column; align-items:center; gap:3px; font-size:11px; font-weight:700;
+    position:relative;
+  }
+  .tab-btn.active{ color:var(--gold); background:var(--surface-2); }
+  .tab-icon{ font-size:18px; }
+  .tab-badge{
+    position:absolute; top:2px; right:18%; background:var(--tomato); color:#fff;
+    min-width:16px; height:16px; border-radius:999px; font-size:9.5px; font-weight:800;
+    display:flex; align-items:center; justify-content:center; padding:0 3px;
+  }
+
+  .page{ display:none; padding: 18px 20px; }
+  .page.active{ display:block; }
+
+  /* ============ ORDERS TAB ============ */
+  .page-header{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+  .page-header h2{ font-size:20px; margin:0; }
+  .refresh-note{ font-size:11px; color:var(--cream-dim); display:flex; align-items:center; gap:6px; }
+  .live-dot{ width:7px; height:7px; border-radius:50%; background:var(--basil); animation: pulse 1.6s infinite; }
+  @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:.35;} }
+
+  .status-filters{ display:flex; gap:8px; overflow-x:auto; margin-bottom:16px; scrollbar-width:none; }
+  .status-filters::-webkit-scrollbar{ display:none; }
+  .sf-chip{
+    flex:0 0 auto; background:var(--surface); border:1px solid var(--line); color:var(--cream-dim);
+    padding:8px 14px; border-radius:999px; font-size:12.5px; font-weight:700; white-space:nowrap;
+  }
+  .sf-chip.active{ background:var(--tomato); border-color:var(--tomato); color:#fff; }
+
+  .order-card{
+    background:var(--surface); border:1px solid var(--line); border-radius:16px;
+    padding:16px; margin-bottom:14px;
+  }
+  .order-card.status-new{ border-left:3px solid var(--tomato); }
+  .order-top{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; }
+  .order-id{ font-weight:800; font-size:15px; }
+  .order-time{ font-size:11px; color:var(--cream-dim); margin-top:2px; }
+  .status-badge{
+    font-size:10.5px; font-weight:800; padding:4px 10px; border-radius:999px; text-transform:uppercase; letter-spacing:.03em;
+  }
+  .status-badge.New{ background: rgba(232,73,29,0.18); color:var(--tomato); }
+  .status-badge.Preparing{ background: rgba(74,127,181,0.18); color:var(--blue); }
+  .status-badge.Done{ background: rgba(92,138,70,0.18); color:var(--basil); }
+  .status-badge.Cancelled{ background: rgba(107,96,88,0.25); color:var(--muted); }
+
+  .order-customer{ font-size:13px; color:var(--cream-dim); margin-bottom:10px; line-height:1.5; }
+  .order-customer strong{ color:var(--cream); }
+  .order-items{ border-top:1px dashed var(--line); border-bottom:1px dashed var(--line); padding:10px 0; margin-bottom:10px; }
+  .order-item-line{ display:flex; justify-content:space-between; font-size:12.5px; padding:3px 0; color:var(--cream-dim); }
+  .order-item-line span:first-child{ color:var(--cream); }
+  .order-total{ display:flex; justify-content:space-between; font-weight:800; font-size:15px; margin-bottom:12px; }
+  .order-total span:last-child{ color:var(--gold); }
+  .order-actions{ display:flex; gap:8px; flex-wrap:wrap; }
+  .action-btn{
+    flex:1; padding:10px; border-radius:10px; font-size:12px; font-weight:700; text-align:center; min-width:90px;
+    background:var(--surface-2); color:var(--cream-dim); border:1px solid var(--line);
+  }
+  .action-btn.primary{ background:var(--blue); color:#fff; border-color:var(--blue); }
+  .action-btn.success{ background:var(--basil); color:#fff; border-color:var(--basil); }
+  .action-btn.danger{ background:transparent; color:var(--tomato); border-color:rgba(232,73,29,0.4); }
+
+  /* ============ MENU TAB ============ */
+  .add-item-btn{
+    background:var(--tomato); color:#fff; font-weight:700; font-size:12.5px;
+    padding:9px 16px; border-radius:999px;
+  }
+  .menu-item-row{
+    background:var(--surface); border:1px solid var(--line); border-radius:14px;
+    padding:14px; margin-bottom:10px; display:flex; align-items:center; gap:12px;
+  }
+  .menu-item-info{ flex:1; }
+  .menu-item-name{ font-weight:700; font-size:14px; }
+  .menu-item-cat{ font-size:11px; color:var(--cream-dim); margin-top:2px; }
+  .menu-item-price{ font-weight:700; color:var(--gold); font-size:13px; margin-top:4px; }
+  .avail-toggle{
+    width:44px; height:26px; border-radius:999px; background:var(--surface-2); position:relative; flex:0 0 auto;
+    border:1px solid var(--line); transition: background .15s ease;
+  }
+  .avail-toggle.on{ background:var(--basil); border-color:var(--basil); }
+  .avail-toggle::after{
+    content:""; position:absolute; top:2px; left:2px; width:20px; height:20px; border-radius:50%;
+    background:#fff; transition: transform .15s ease;
+  }
+  .avail-toggle.on::after{ transform: translateX(18px); }
+  .edit-icon-btn{
+    width:34px; height:34px; border-radius:10px; background:var(--surface-2); color:var(--cream-dim);
+    display:flex; align-items:center; justify-content:center; font-size:14px; flex:0 0 auto;
+  }
+
+  /* ============ SALES TAB ============ */
+  .sales-grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:20px; }
+  .sales-card{
+    background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:20px 16px; text-align:center;
+  }
+  .sales-card .num{ font-family:'Anton',sans-serif; font-size:30px; color:var(--gold); }
+  .sales-card .label{ font-size:11px; color:var(--cream-dim); text-transform:uppercase; letter-spacing:.05em; margin-top:4px; }
+
+  .empty-state{ text-align:center; padding:50px 20px; color:var(--cream-dim); }
+  .empty-state .display{ font-size:18px; color:var(--cream); margin-bottom:6px; }
+
+  /* ============ MODAL (add/edit item) ============ */
+  .overlay{ position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:60; display:none; align-items:flex-end; justify-content:center; }
+  .overlay.open{ display:flex; }
+  .sheet{
+    background:var(--bg); width:100%; max-width:480px; border-radius:22px 22px 0 0; max-height:88vh; overflow-y:auto;
+    padding:20px 20px 28px; position:relative; border-top:1px solid var(--line); animation: slideUp .25s ease;
+  }
+  @keyframes slideUp{ from{ transform:translateY(40px); opacity:0; } to{ transform:none; opacity:1; } }
+  .sheet-handle{ width:40px; height:4px; background:var(--line); border-radius:99px; margin:0 auto 16px; }
+  .sheet-close{
+    position:absolute; top:16px; right:18px; background:var(--surface-2); width:32px; height:32px; border-radius:50%;
+    color:var(--cream); font-size:16px; display:flex; align-items:center; justify-content:center;
+  }
+  .sheet h3{ font-size:19px; margin:0 0 16px; }
+  .field textarea{
+    width:100%; background:var(--surface-2); border:1px solid var(--line); color:var(--cream);
+    padding:12px 14px; border-radius:10px; font-size:14px; outline:none; resize:vertical; min-height:60px;
+  }
+  .field select{
+    width:100%; background:var(--surface-2); border:1px solid var(--line); color:var(--cream);
+    padding:12px 14px; border-radius:10px; font-size:14px; outline:none;
+  }
+  .field-row{ display:flex; gap:10px; }
+  .field-row .field{ flex:1; }
+  .checkbox-row{ display:flex; align-items:center; gap:10px; margin-bottom:16px; }
+  .checkbox-row input{ width:18px; height:18px; accent-color:var(--tomato); }
+  .delete-item-btn{ color:var(--tomato); font-size:12.5px; font-weight:700; background:none; margin-top:6px; }
+
+  @media (min-width: 720px){
+    .tabbar{ position:sticky; top:57px; bottom:auto; flex-direction:row; justify-content:flex-start; gap:6px; padding:10px 20px; }
+    .tab-btn{ flex:0 0 auto; flex-direction:row; padding:9px 18px; }
+    #appScreen{ padding-bottom:0; }
+    .page{ max-width:900px; margin:0 auto; }
+    .sales-grid{ grid-template-columns:repeat(3,1fr); }
+  }
+
+  /* ============ BILLING TAB ============ */
+  .chip-row{ display:flex; gap:8px; overflow-x:auto; padding:2px 0 14px; scrollbar-width:none; }
+  .chip-row::-webkit-scrollbar{ display:none; }
+  .chip{
+    flex:0 0 auto; background:var(--surface); color:var(--cream-dim); border:1px solid var(--line);
+    padding:8px 14px; border-radius:999px; font-size:12.5px; font-weight:700; white-space:nowrap;
+  }
+  .chip.active{ background:var(--tomato); border-color:var(--tomato); color:#fff; }
+
+  .billing-section-title{ font-size:12px; font-weight:800; color:var(--cream-dim); text-transform:uppercase; letter-spacing:.05em; margin:18px 0 8px; }
+  .billing-item-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; }
+  .billing-item-card{
+    background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:12px;
+    display:flex; flex-direction:column; gap:6px;
+  }
+  .billing-item-name{ font-weight:700; font-size:13.5px; }
+  .billing-item-price{ color:var(--gold); font-weight:700; font-size:12.5px; }
+  .billing-size-row{ display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; }
+  .billing-size-btn{
+    background:var(--surface-2); border:1px solid var(--line); color:var(--cream-dim);
+    padding:6px 10px; border-radius:8px; font-size:11px; font-weight:700; flex:1;
+  }
+  .billing-add-btn{
+    background:var(--tomato); color:#fff; font-weight:700; font-size:12px; padding:8px; border-radius:9px; margin-top:2px;
+  }
+
+  .cart-fab{
+    position:fixed; left:16px; right:16px; bottom:74px; z-index:45;
+    background:var(--tomato); border-radius:16px; padding:14px 18px;
+    display:flex; align-items:center; justify-content:space-between; box-shadow:var(--shadow);
+    transform:translateY(120px); transition:transform .25s ease; max-width:900px; margin:0 auto;
+  }
+  .cart-fab.visible{ transform:translateY(0); }
+  .cart-fab-left{ display:flex; flex-direction:column; }
+  .cart-fab-left small{ color:rgba(255,255,255,0.8); font-size:11px; font-weight:600; }
+  .cart-fab-left strong{ color:#fff; font-size:16px; }
+  .cart-fab-btn{ background:#fff; color:var(--tomato); font-weight:800; font-size:13px; padding:10px 18px; border-radius:10px; }
+
+  .cart-line{ display:flex; gap:12px; padding:12px 0; border-bottom:1px solid var(--line); }
+  .cart-line-info{ flex:1; }
+  .cart-line-name{ font-weight:700; font-size:14px; }
+  .cart-line-meta{ font-size:11.5px; color:var(--cream-dim); margin-top:2px; }
+  .cart-line-price{ font-weight:700; color:var(--gold); font-size:13px; margin-top:4px; }
+  .cart-line-actions{ display:flex; flex-direction:column; align-items:flex-end; justify-content:space-between; gap:6px; }
+  .remove-link{ background:none; color:var(--tomato); font-size:11px; font-weight:700; }
+  .qty-control{ display:flex; align-items:center; gap:10px; }
+  .qty-btn{ width:26px; height:26px; border-radius:7px; background:var(--surface-2); color:var(--cream); font-size:14px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+
+  .totals-ticket{ margin-top:14px; padding-top:12px; border-top:2px dashed var(--line); }
+  .totals-row{ display:flex; justify-content:space-between; font-size:13px; padding:3px 0; color:var(--cream-dim); }
+  .totals-row.grand{ color:var(--cream); font-weight:800; font-size:16px; padding-top:8px; }
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN SCREEN ============ -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-mark">D</div>
+    <h1>Admin Login</h1>
+    <div class="login-sub">DOM'S PIZZA — Order Management</div>
+    <div class="field">
+      <label>Username</label>
+      <input type="text" id="loginUsername" placeholder="admin" autocomplete="username">
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button class="btn-primary" id="loginBtn">Log In</button>
+    <div class="login-error" id="loginError">Galat username ya password</div>
+  </div>
+</div>
+
+<!-- ============ APP SCREEN ============ -->
+<div id="appScreen">
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-mark">D</div>
+      <div class="brand-name">DOM'S <span>PIZZA</span><small>Admin Panel</small></div>
+    </div>
+    <button class="logout-btn" id="logoutBtn">Log Out</button>
+  </div>
+
+  <div class="tabbar">
+    <button class="tab-btn active" data-tab="orders">
+      <span class="tab-icon">🧾</span> Orders
+      <span class="tab-badge" id="ordersBadge" style="display:none;">0</span>
+    </button>
+    <button class="tab-btn" data-tab="billing"><span class="tab-icon">🖨️</span> Billing</button>
+    <button class="tab-btn" data-tab="menu"><span class="tab-icon">🍕</span> Menu</button>
+    <button class="tab-btn" data-tab="sales"><span class="tab-icon">📊</span> Sales</button>
+  </div>
+
+  <!-- ORDERS PAGE -->
+  <div class="page active" id="page-orders">
+    <div class="page-header">
+      <h2>Orders</h2>
+      <div class="refresh-note"><span class="live-dot"></span> Auto-updating</div>
+    </div>
+    <div class="status-filters" id="statusFilters">
+      <button class="sf-chip active" data-status="all">All</button>
+      <button class="sf-chip" data-status="New">New</button>
+      <button class="sf-chip" data-status="Preparing">Preparing</button>
+      <button class="sf-chip" data-status="Done">Done</button>
+      <button class="sf-chip" data-status="Cancelled">Cancelled</button>
+    </div>
+    <div id="ordersList"><div class="empty-state"><div class="display">Loading orders...</div></div></div>
+  </div>
+
+  <!-- BILLING PAGE (walk-in counter orders) -->
+  <div class="page" id="page-billing">
+    <div class="page-header"><h2>New Bill</h2></div>
+    <div class="chip-row" id="billingChipRow"></div>
+    <div id="billingMenuList"><div class="empty-state"><div class="display">Loading menu...</div></div></div>
+  </div>
+
+  <!-- MENU PAGE -->
+  <div class="page" id="page-menu">
+    <div class="page-header">
+      <h2>Menu</h2>
+      <button class="add-item-btn" id="addItemBtn">+ Add Item</button>
+    </div>
+    <div id="menuList"><div class="empty-state"><div class="display">Loading menu...</div></div></div>
+  </div>
+
+  <!-- SALES PAGE -->
+  <div class="page" id="page-sales">
+    <div class="page-header"><h2>Today's Sales</h2></div>
+    <div class="sales-grid">
+      <div class="sales-card"><div class="num" id="salesOrders">0</div><div class="label">Orders Today</div></div>
+      <div class="sales-card"><div class="num" id="salesTotal">₹0</div><div class="label">Total Sales</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ BILLING CART FLOATING BAR ============ -->
+<div class="cart-fab" id="billingFab">
+  <div class="cart-fab-left">
+    <small id="billingFabCount">0 items</small>
+    <strong id="billingFabTotal">₹0</strong>
+  </div>
+  <button class="cart-fab-btn" id="billingFabBtn">Review Bill →</button>
+</div>
+
+<!-- ============ BILLING CART SHEET ============ -->
+<div class="overlay" id="billingOverlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <button class="sheet-close" id="billingSheetClose">✕</button>
+    <h3>Bill Summary</h3>
+    <div id="billingCartBody"></div>
+
+    <div class="field" style="margin-top:6px;">
+      <label>Customer Name (optional)</label>
+      <input type="text" id="billingCustName" placeholder="Walk-in Customer">
+    </div>
+    <div class="field">
+      <label>Phone (optional)</label>
+      <input type="tel" id="billingCustPhone" placeholder="10-digit number" maxlength="10" inputmode="numeric">
+    </div>
+
+    <div class="totals-ticket" id="billingTotals"></div>
+
+    <button class="btn-primary" id="createBillBtn">Create &amp; Print Bill</button>
+  </div>
+</div>
+
+<!-- ============ ADD/EDIT ITEM SHEET ============ -->
+<div class="overlay" id="itemOverlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <button class="sheet-close" id="itemSheetClose">✕</button>
+    <h3 id="itemSheetTitle">Add Item</h3>
+
+    <div class="field">
+      <label>Item Name</label>
+      <input type="text" id="itemName" placeholder="e.g. Margherita">
+    </div>
+    <div class="field">
+      <label>Category</label>
+      <select id="itemCategory"></select>
+    </div>
+    <div class="field">
+      <label>Food Type</label>
+      <select id="itemFoodType">
+        <option value="Veg">Veg</option>
+        <option value="Non-Veg">Non-Veg</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Description</label>
+      <textarea id="itemDescription" placeholder="Short description (optional)"></textarea>
+    </div>
+    <div class="checkbox-row">
+      <input type="checkbox" id="itemHasSizes">
+      <label style="margin:0; text-transform:none; font-size:13px; color:var(--cream);">This item has sizes (Small/Medium/Large) — like pizza</label>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label id="basePriceLabel">Price</label>
+        <input type="number" id="itemBasePrice" placeholder="0">
+      </div>
+      <div class="field" id="mediumPriceField" style="display:none;">
+        <label>Medium Price</label>
+        <input type="number" id="itemMediumPrice" placeholder="0">
+      </div>
+      <div class="field" id="largePriceField" style="display:none;">
+        <label>Large Price</label>
+        <input type="number" id="itemLargePrice" placeholder="0">
+      </div>
+    </div>
+
+    <button class="btn-primary" id="saveItemBtn">Save Item</button>
+    <button class="delete-item-btn" id="deleteItemBtn" style="display:none;">Delete this item</button>
+  </div>
+</div>
+
+<script>
+// ======================================================
+// CONFIG
+// ======================================================
+const API_BASE = 'https://doms-pizza-backend.onrender.com/api';
+
+// ======================================================
+// AUDIO ALERT (generated tone, no external file needed)
+// ======================================================
+function playAlertSound(){
+  try{
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [880, 1046].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      const start = ctx.currentTime + i * 0.18;
+      gain.gain.setValueAtTime(0.001, start);
+      gain.gain.exponentialRampToValueAtTime(0.3, start + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.32);
+      osc.start(start);
+      osc.stop(start + 0.35);
+    });
+  }catch(e){ /* audio blocked until user interacts, ignore */ }
+}
+
+// ======================================================
+// STATE
+// ======================================================
+let authToken = localStorage.getItem('domsPizzaAdminToken') || null;
+let categories = [];
+let lastNewCount = 0;
+let currentStatusFilter = 'all';
+let editingItemId = null;
+let pollTimer = null;
+
+// ======================================================
+// LOGIN
+// ======================================================
+async function attemptLogin(){
+  const username = document.getElementById('loginUsername').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const btn = document.getElementById('loginBtn');
+  const errBox = document.getElementById('loginError');
+  errBox.style.display = 'none';
+
+  if(!username || !password){ errBox.textContent = 'Username aur password dono zaroori hain'; errBox.style.display='block'; return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Logging in...';
+
+  try{
+    const res = await fetch(`${API_BASE}/admin/login`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ username, password })
+    });
+    const data = await res.json();
+    if(!data.success) throw new Error(data.message || 'Login failed');
+
+    authToken = data.token;
+    localStorage.setItem('domsPizzaAdminToken', authToken);
+    showApp();
+  }catch(err){
+    errBox.textContent = err.message.includes('fetch') ? 'Server se connect nahi ho paaya' : 'Galat username ya password';
+    errBox.style.display = 'block';
+  }finally{
+    btn.disabled = false;
+    btn.textContent = 'Log In';
+  }
+}
+document.getElementById('loginBtn').onclick = attemptLogin;
+document.getElementById('loginPassword').addEventListener('keydown', e => { if(e.key === 'Enter') attemptLogin(); });
+
+document.getElementById('logoutBtn').onclick = () => {
+  authToken = null;
+  localStorage.removeItem('domsPizzaAdminToken');
+  clearInterval(pollTimer);
+  document.getElementById('appScreen').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+};
+
+function showApp(){
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('appScreen').style.display = 'block';
+  loadCategories();
+  loadOrders();
+  loadSales();
+  startPolling();
+}
+
+// on load, if token already saved, skip login
+if(authToken){ showApp(); }
+
+// ======================================================
+// TABS
+// ======================================================
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.onclick = () => {
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('page-' + btn.dataset.tab).classList.add('active');
+    if(btn.dataset.tab === 'billing') loadBillingMenu();
+    if(btn.dataset.tab === 'menu') loadMenu();
+    if(btn.dataset.tab === 'sales') loadSales();
+  };
+});
+
+// ======================================================
+// POLLING (auto-refresh + sound alert)
+// ======================================================
+function startPolling(){
+  clearInterval(pollTimer);
+  pollTimer = setInterval(async () => {
+    await checkNewOrders();
+    if(document.getElementById('page-orders').classList.contains('active')){
+      loadOrders();
+    }
+  }, 12000);
+}
+
+async function checkNewOrders(){
+  try{
+    const res = await fetch(`${API_BASE}/orders/new-count`);
+    const data = await res.json();
+    if(!data.success) return;
+    const badge = document.getElementById('ordersBadge');
+    if(data.newCount > 0){
+      badge.style.display = 'flex';
+      badge.textContent = data.newCount;
+    }else{
+      badge.style.display = 'none';
+    }
+    if(data.newCount > lastNewCount){
+      playAlertSound();
+    }
+    lastNewCount = data.newCount;
+  }catch(e){ /* ignore transient errors */ }
+}
+
+// ======================================================
+// ORDERS TAB
+// ======================================================
+document.querySelectorAll('.sf-chip').forEach(chip=>{
+  chip.onclick = () => {
+    document.querySelectorAll('.sf-chip').forEach(c=>c.classList.remove('active'));
+    chip.classList.add('active');
+    currentStatusFilter = chip.dataset.status;
+    loadOrders();
+  };
+});
+
+async function loadOrders(){
+  const list = document.getElementById('ordersList');
+  try{
+    const url = currentStatusFilter === 'all' ? `${API_BASE}/orders` : `${API_BASE}/orders?status=${currentStatusFilter}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if(!data.success) throw new Error();
+
+    if(data.orders.length === 0){
+      list.innerHTML = `<div class="empty-state"><div class="display">No orders here</div><p>Nothing to show for this filter yet.</p></div>`;
+      return;
+    }
+
+    list.innerHTML = data.orders.map(order => orderCardHTML(order)).join('');
+
+    list.querySelectorAll('[data-set-status]').forEach(btn=>{
+      btn.onclick = () => updateOrderStatus(btn.dataset.orderId, btn.dataset.setStatus);
+    });
+  }catch(err){
+    list.innerHTML = `<div class="empty-state"><div class="display">Couldn't load orders</div><p>Check that the backend server is running.</p></div>`;
+  }
+  checkNewOrders();
+}
+
+function timeAgo(dateStr){
+  const diffMs = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if(mins < 1) return 'Just now';
+  if(mins < 60) return mins + ' min ago';
+  const hrs = Math.floor(mins / 60);
+  return hrs + ' hr ago';
+}
+
+function orderCardHTML(order){
+  const itemsHTML = order.items.map(i => `
+    <div class="order-item-line">
+      <span>${i.quantity}× ${i.item_name} ${i.size !== 'Regular' ? `(${i.size})` : ''}</span>
+      <span>₹${Number(i.price * i.quantity).toFixed(0)}</span>
+    </div>
+  `).join('');
+
+  let actionsHTML = '';
+  if(order.status === 'New'){
+    actionsHTML = `
+      <button class="action-btn primary" data-order-id="${order.id}" data-set-status="Preparing">Start Preparing</button>
+      <button class="action-btn danger" data-order-id="${order.id}" data-set-status="Cancelled">Cancel</button>
+    `;
+  }else if(order.status === 'Preparing'){
+    actionsHTML = `
+      <button class="action-btn success" data-order-id="${order.id}" data-set-status="Done">Mark Done</button>
+      <button class="action-btn danger" data-order-id="${order.id}" data-set-status="Cancelled">Cancel</button>
+    `;
+  }else{
+    actionsHTML = `<button class="action-btn" data-order-id="${order.id}" data-set-status="New">Reopen</button>`;
+  }
+
+  return `
+    <div class="order-card status-${order.status.toLowerCase()}">
+      <div class="order-top">
+        <div>
+          <div class="order-id">#${String(order.id).padStart(4,'0')} · ${order.order_type}</div>
+          <div class="order-time">${timeAgo(order.created_at)}</div>
+        </div>
+        <span class="status-badge ${order.status}">${order.status}</span>
+      </div>
+      <div class="order-customer">
+        <strong>${order.customer_name}</strong> · ${order.customer_phone}<br>
+        ${order.customer_address}
+      </div>
+      <div class="order-items">${itemsHTML}</div>
+      <div class="order-total"><span>Total (COD)</span><span>₹${Number(order.total_amount).toFixed(0)}</span></div>
+      <div class="order-actions">${actionsHTML}</div>
+    </div>
+  `;
+}
+
+async function updateOrderStatus(orderId, status){
+  try{
+    await fetch(`${API_BASE}/orders/${orderId}/status`, {
+      method:'PUT', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ status })
+    });
+    loadOrders();
+    loadSales();
+  }catch(err){
+    alert('Status update nahi ho paaya');
+  }
+}
+
+// ======================================================
+// MENU TAB
+// ======================================================
+async function loadCategories(){
+  try{
+    const res = await fetch(`${API_BASE}/menu`);
+    const data = await res.json();
+    if(data.success) categories = data.categories;
+  }catch(e){ /* handled elsewhere */ }
+}
+
+async function loadMenu(){
+  const list = document.getElementById('menuList');
+  try{
+    const res = await fetch(`${API_BASE}/menu`);
+    const data = await res.json();
+    if(!data.success) throw new Error();
+    categories = data.categories;
+
+    let html = '';
+    categories.forEach(cat=>{
+      if(cat.items.length === 0) return;
+      html += `<div style="margin:18px 0 8px; font-size:12px; font-weight:800; color:var(--cream-dim); text-transform:uppercase; letter-spacing:.05em;">${cat.name}</div>`;
+      cat.items.forEach(item=>{
+        html += `
+          <div class="menu-item-row">
+            <div class="menu-item-info">
+              <div class="menu-item-name">${item.name}</div>
+              <div class="menu-item-cat">${item.food_type}${item.has_sizes ? ' · Sizes' : ''}</div>
+              <div class="menu-item-price">₹${item.base_price}${item.has_sizes ? ' – ₹' + (item.large_price || item.base_price) : ''}</div>
+            </div>
+            <button class="avail-toggle ${item.is_available ? 'on' : ''}" data-toggle-id="${item.id}" data-current="${item.is_available}"></button>
+            <button class="edit-icon-btn" data-edit-id="${item.id}">✎</button>
+          </div>
+        `;
+      });
+    });
+    list.innerHTML = html || `<div class="empty-state"><div class="display">No items yet</div><p>Tap "+ Add Item" to create your first menu item.</p></div>`;
+
+    list.querySelectorAll('[data-toggle-id]').forEach(btn=>{
+      btn.onclick = () => toggleAvailability(btn.dataset.toggleId, btn.dataset.current === '1' || btn.dataset.current === 'true');
+    });
+    list.querySelectorAll('[data-edit-id]').forEach(btn=>{
+      btn.onclick = () => openEditItem(Number(btn.dataset.editId));
+    });
+  }catch(err){
+    list.innerHTML = `<div class="empty-state"><div class="display">Couldn't load menu</div></div>`;
+  }
+}
+
+function findItem(id){
+  for(const cat of categories){
+    const found = cat.items.find(i => i.id === id);
+    if(found) return found;
+  }
+  return null;
+}
+
+async function toggleAvailability(itemId, currentlyOn){
+  const item = findItem(Number(itemId));
+  if(!item) return;
+  try{
+    await fetch(`${API_BASE}/menu/${itemId}`, {
+      method:'PUT', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        name: item.name, food_type: item.food_type, description: item.description,
+        base_price: item.base_price, medium_price: item.medium_price, large_price: item.large_price,
+        is_available: !currentlyOn
+      })
+    });
+    loadMenu();
+  }catch(err){ alert('Update nahi ho paaya'); }
+}
+
+// ---- Add / Edit item sheet ----
+function populateCategoryDropdown(){
+  const sel = document.getElementById('itemCategory');
+  sel.innerHTML = categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+}
+
+document.getElementById('addItemBtn').onclick = () => {
+  editingItemId = null;
+  document.getElementById('itemSheetTitle').textContent = 'Add Item';
+  document.getElementById('deleteItemBtn').style.display = 'none';
+  populateCategoryDropdown();
+  document.getElementById('itemName').value = '';
+  document.getElementById('itemFoodType').value = 'Veg';
+  document.getElementById('itemDescription').value = '';
+  document.getElementById('itemHasSizes').checked = false;
+  document.getElementById('itemBasePrice').value = '';
+  document.getElementById('itemMediumPrice').value = '';
+  document.getElementById('itemLargePrice').value = '';
+  toggleSizeFields();
+  document.getElementById('itemOverlay').classList.add('open');
+};
+
+function openEditItem(itemId){
+  const item = findItem(itemId);
+  if(!item) return;
+  editingItemId = itemId;
+  document.getElementById('itemSheetTitle').textContent = 'Edit Item';
+  document.getElementById('deleteItemBtn').style.display = 'block';
+  populateCategoryDropdown();
+  document.getElementById('itemCategory').value = item.category_id;
+  document.getElementById('itemName').value = item.name;
+  document.getElementById('itemFoodType').value = item.food_type;
+  document.getElementById('itemDescription').value = item.description || '';
+  document.getElementById('itemHasSizes').checked = !!item.has_sizes;
+  document.getElementById('itemBasePrice').value = item.base_price;
+  document.getElementById('itemMediumPrice').value = item.medium_price || '';
+  document.getElementById('itemLargePrice').value = item.large_price || '';
+  toggleSizeFields();
+  document.getElementById('itemOverlay').classList.add('open');
+}
+
+document.getElementById('itemHasSizes').addEventListener('change', toggleSizeFields);
+function toggleSizeFields(){
+  const hasSizes = document.getElementById('itemHasSizes').checked;
+  document.getElementById('mediumPriceField').style.display = hasSizes ? 'block' : 'none';
+  document.getElementById('largePriceField').style.display = hasSizes ? 'block' : 'none';
+  document.getElementById('basePriceLabel').textContent = hasSizes ? 'Small Price' : 'Price';
+}
+
+document.getElementById('itemSheetClose').onclick = () => document.getElementById('itemOverlay').classList.remove('open');
+
+document.getElementById('saveItemBtn').onclick = async () => {
+  const name = document.getElementById('itemName').value.trim();
+  const category_id = Number(document.getElementById('itemCategory').value);
+  const food_type = document.getElementById('itemFoodType').value;
+  const description = document.getElementById('itemDescription').value.trim();
+  const has_sizes = document.getElementById('itemHasSizes').checked;
+  const base_price = Number(document.getElementById('itemBasePrice').value);
+  const medium_price = document.getElementById('itemMediumPrice').value ? Number(document.getElementById('itemMediumPrice').value) : null;
+  const large_price = document.getElementById('itemLargePrice').value ? Number(document.getElementById('itemLargePrice').value) : null;
+
+  if(!name || !base_price){ alert('Naam aur price zaroori hai'); return; }
+
+  const btn = document.getElementById('saveItemBtn');
+  btn.disabled = true; btn.textContent = 'Saving...';
+
+  try{
+    if(editingItemId){
+      await fetch(`${API_BASE}/menu/${editingItemId}`, {
+        method:'PUT', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ name, food_type, description, base_price, medium_price, large_price, is_available: true })
+      });
+    }else{
+      await fetch(`${API_BASE}/menu`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ category_id, name, food_type, description, has_sizes, base_price, medium_price, large_price })
+      });
+    }
+    document.getElementById('itemOverlay').classList.remove('open');
+    loadMenu();
+  }catch(err){
+    alert('Save nahi ho paaya');
+  }finally{
+    btn.disabled = false; btn.textContent = 'Save Item';
+  }
+};
+
+document.getElementById('deleteItemBtn').onclick = async () => {
+  if(!editingItemId) return;
+  if(!confirm('Yeh item permanently delete karna hai?')) return;
+  try{
+    await fetch(`${API_BASE}/menu/${editingItemId}`, { method:'DELETE' });
+    document.getElementById('itemOverlay').classList.remove('open');
+    loadMenu();
+  }catch(err){ alert('Delete nahi ho paaya'); }
+};
+
+// ======================================================
+// SALES TAB
+// ======================================================
+async function loadSales(){
+  try{
+    const res = await fetch(`${API_BASE}/orders/sales-summary`);
+    const data = await res.json();
+    if(!data.success) return;
+    document.getElementById('salesOrders').textContent = data.summary.totalOrders;
+    document.getElementById('salesTotal').textContent = '₹' + Number(data.summary.totalSales).toFixed(0);
+  }catch(e){ /* ignore */ }
+}
+
+// ======================================================
+// BILLING TAB (walk-in counter orders)
+// ======================================================
+let billingCart = [];
+let billingActiveCategory = 'all';
+
+async function loadBillingMenu(){
+  if(categories.length === 0){ await loadCategories(); }
+  renderBillingChips();
+  renderBillingMenu();
+}
+
+function renderBillingChips(){
+  const row = document.getElementById('billingChipRow');
+  row.innerHTML = '';
+  const allChip = document.createElement('button');
+  allChip.className = 'chip active';
+  allChip.textContent = 'All';
+  allChip.onclick = () => { billingActiveCategory = 'all'; renderBillingMenu(); highlightBillingChip(allChip); };
+  row.appendChild(allChip);
+
+  categories.forEach(cat=>{
+    if(cat.items.length === 0) return;
+    const chip = document.createElement('button');
+    chip.className = 'chip';
+    chip.textContent = cat.name;
+    chip.onclick = () => { billingActiveCategory = cat.id; renderBillingMenu(); highlightBillingChip(chip); };
+    row.appendChild(chip);
+  });
+}
+function highlightBillingChip(el){
+  document.querySelectorAll('#billingChipRow .chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function renderBillingMenu(){
+  const container = document.getElementById('billingMenuList');
+  container.innerHTML = '';
+  let any = false;
+
+  categories.forEach(cat=>{
+    if(billingActiveCategory !== 'all' && cat.id !== billingActiveCategory) return;
+    if(cat.items.length === 0) return;
+    any = true;
+
+    const section = document.createElement('div');
+    section.innerHTML = `
+      <div class="billing-section-title">${cat.name}</div>
+      <div class="billing-item-grid">
+        ${cat.items.map(item => billingItemCardHTML(item)).join('')}
+      </div>
+    `;
+    container.appendChild(section);
+  });
+
+  if(!any){
+    container.innerHTML = `<div class="empty-state"><div class="display">No items found</div></div>`;
+  }
+
+  container.querySelectorAll('[data-quick-add]').forEach(btn=>{
+    btn.onclick = () => addToBillingCart(Number(btn.dataset.quickAdd), 'Regular');
+  });
+  container.querySelectorAll('[data-size-add]').forEach(btn=>{
+    btn.onclick = () => addToBillingCart(Number(btn.dataset.itemId), btn.dataset.sizeAdd);
+  });
+}
+
+function billingItemCardHTML(item){
+  if(item.has_sizes){
+    return `
+      <div class="billing-item-card">
+        <div class="billing-item-name">${item.name}</div>
+        <div class="billing-item-price">S ₹${item.base_price} · M ₹${item.medium_price || item.base_price} · L ₹${item.large_price || item.base_price}</div>
+        <div class="billing-size-row">
+          <button class="billing-size-btn" data-item-id="${item.id}" data-size-add="Small">S</button>
+          <button class="billing-size-btn" data-item-id="${item.id}" data-size-add="Medium">M</button>
+          <button class="billing-size-btn" data-item-id="${item.id}" data-size-add="Large">L</button>
+        </div>
+      </div>
+    `;
+  }
+  return `
+    <div class="billing-item-card">
+      <div class="billing-item-name">${item.name}</div>
+      <div class="billing-item-price">₹${item.base_price}</div>
+      <button class="billing-add-btn" data-quick-add="${item.id}">+ Add</button>
+    </div>
+  `;
+}
+
+function billingSizePrice(item, size){
+  if(!item.has_sizes) return item.base_price;
+  if(size === 'Small') return item.base_price;
+  if(size === 'Medium') return item.medium_price || item.base_price;
+  if(size === 'Large') return item.large_price || item.base_price;
+  return item.base_price;
+}
+
+function addToBillingCart(itemId, size){
+  const item = findItem(itemId);
+  if(!item) return;
+  const price = billingSizePrice(item, size);
+
+  const existing = billingCart.find(l => l.menu_item_id === itemId && l.size === size);
+  if(existing){ existing.quantity++; }
+  else{
+    billingCart.push({ menu_item_id: itemId, name: item.name, size, toppings: null, quantity: 1, price });
+  }
+  renderBillingFab();
+}
+
+function billingCartTotal(){ return billingCart.reduce((s,l)=>s + l.price*l.quantity, 0); }
+function billingCartCount(){ return billingCart.reduce((s,l)=>s + l.quantity, 0); }
+
+function renderBillingFab(){
+  const count = billingCartCount();
+  document.getElementById('billingFabCount').textContent = count + (count===1 ? ' item' : ' items');
+  document.getElementById('billingFabTotal').textContent = '₹' + billingCartTotal().toFixed(0);
+  document.getElementById('billingFab').classList.toggle('visible', count > 0);
+}
+
+document.getElementById('billingFabBtn').onclick = () => {
+  renderBillingCartSheet();
+  document.getElementById('billingOverlay').classList.add('open');
+};
+document.getElementById('billingSheetClose').onclick = () => document.getElementById('billingOverlay').classList.remove('open');
+
+function renderBillingCartSheet(){
+  const body = document.getElementById('billingCartBody');
+  if(billingCart.length === 0){
+    body.innerHTML = `<div class="empty-state"><div class="display">No items added</div></div>`;
+    document.getElementById('billingTotals').innerHTML = '';
+    return;
+  }
+
+  body.innerHTML = billingCart.map((line, idx) => `
+    <div class="cart-line">
+      <div class="cart-line-info">
+        <div class="cart-line-name">${line.name} ${line.size !== 'Regular' ? `(${line.size})` : ''}</div>
+        <div class="cart-line-price">₹${line.price} × ${line.quantity} = ₹${(line.price*line.quantity).toFixed(0)}</div>
+      </div>
+      <div class="cart-line-actions">
+        <button class="remove-link" data-remove="${idx}">Remove</button>
+        <div class="qty-control">
+          <button class="qty-btn" data-minus="${idx}">-</button>
+          <span style="font-weight:700; min-width:16px; text-align:center;">${line.quantity}</span>
+          <button class="qty-btn" data-plus="${idx}">+</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  body.querySelectorAll('[data-remove]').forEach(btn=>{
+    btn.onclick = () => { billingCart.splice(Number(btn.dataset.remove),1); renderBillingCartSheet(); renderBillingFab(); };
+  });
+  body.querySelectorAll('[data-minus]').forEach(btn=>{
+    btn.onclick = () => {
+      const i = Number(btn.dataset.minus);
+      if(billingCart[i].quantity > 1){ billingCart[i].quantity--; } else { billingCart.splice(i,1); }
+      renderBillingCartSheet(); renderBillingFab();
+    };
+  });
+  body.querySelectorAll('[data-plus]').forEach(btn=>{
+    btn.onclick = () => { billingCart[Number(btn.dataset.plus)].quantity++; renderBillingCartSheet(); renderBillingFab(); };
+  });
+
+  document.getElementById('billingTotals').innerHTML = `
+    <div class="totals-row grand"><span>Total (Cash)</span><span>₹${billingCartTotal().toFixed(0)}</span></div>
+  `;
+}
+
+document.getElementById('billingCustPhone').addEventListener('input', (e) => {
+  e.target.value = e.target.value.replace(/[^0-9]/g, '').slice(0, 10);
+});
+
+document.getElementById('createBillBtn').onclick = async () => {
+  if(billingCart.length === 0){ alert('Pehle kuch items add karo'); return; }
+
+  const name = document.getElementById('billingCustName').value.trim() || 'Walk-in Customer';
+  const phoneInput = document.getElementById('billingCustPhone').value.trim();
+  const phone = phoneInput.length === 10 ? phoneInput : '0000000000';
+
+  const btn = document.getElementById('createBillBtn');
+  btn.disabled = true; btn.textContent = 'Creating bill...';
+
+  try{
+    const res = await fetch(`${API_BASE}/orders`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        name, phone, address: 'In-store purchase',
+        order_type: 'Walk-in', items: billingCart
+      })
+    });
+    const data = await res.json();
+    if(!data.success) throw new Error(data.message || 'Failed');
+
+    printReceipt(data.order_id, name, billingCart, data.total_amount);
+
+    billingCart = [];
+    renderBillingFab();
+    document.getElementById('billingOverlay').classList.remove('open');
+    document.getElementById('billingCustName').value = '';
+    document.getElementById('billingCustPhone').value = '';
+    loadSales();
+  }catch(err){
+    alert('Bill create nahi ho paayi: ' + err.message);
+  }finally{
+    btn.disabled = false; btn.textContent = 'Create & Print Bill';
+  }
+};
+
+function printReceipt(orderId, customerName, items, total){
+  const receiptWindow = window.open('', '_blank', 'width=380,height=600');
+  const lines = items.map(l => `
+    <div style="display:flex; justify-content:space-between; font-size:13px; padding:4px 0;">
+      <span>${l.quantity} × ${l.name}${l.size !== 'Regular' ? ' ('+l.size+')' : ''}</span>
+      <span>₹${(l.price*l.quantity).toFixed(0)}</span>
+    </div>
+  `).join('');
+
+  receiptWindow.document.write(`
+    <html>
+    <head>
+      <title>Bill #${orderId}</title>
+      <style>
+        body{ font-family: 'Courier New', monospace; padding: 20px; max-width:320px; margin:0 auto; color:#111; }
+        h2{ text-align:center; margin:0 0 2px; letter-spacing:1px; }
+        .sub{ text-align:center; font-size:11px; color:#555; margin-bottom:14px; }
+        hr{ border:none; border-top:1px dashed #999; margin:10px 0; }
+        .total-row{ display:flex; justify-content:space-between; font-weight:bold; font-size:15px; margin-top:8px; }
+        .footer{ text-align:center; font-size:11px; color:#555; margin-top:16px; }
+      </style>
+    </head>
+    <body>
+      <h2>DOM'S PIZZA</h2>
+      <div class="sub">Bill #${String(orderId).padStart(4,'0')} · ${new Date().toLocaleString('en-IN')}</div>
+      <div class="sub">Customer: ${customerName}</div>
+      <hr>
+      ${lines}
+      <hr>
+      <div class="total-row"><span>TOTAL</span><span>₹${Number(total).toFixed(0)}</span></div>
+      <div class="footer">Thank you, visit again!</div>
+      <script>window.onload = () => { window.print(); };<\/script>
+    </body>
+    </html>
+  `);
+  receiptWindow.document.close();
+}
+</script>
+</body>
+</html>
