@@ -362,10 +362,26 @@
 
   <!-- SALES PAGE -->
   <div class="page" id="page-sales">
-    <div class="page-header"><h2>Today's Sales</h2></div>
+    <div class="page-header"><h2>Sales</h2></div>
+    <div class="field" style="margin-bottom:18px;">
+      <label>Select Date</label>
+      <input type="date" id="salesDateInput" style="width:100%; background:var(--surface); border:1px solid var(--line); color:var(--cream); padding:12px 14px; border-radius:10px; font-size:14px;">
+    </div>
     <div class="sales-grid">
-      <div class="sales-card"><div class="num" id="salesOrders">0</div><div class="label">Orders Today</div></div>
+      <div class="sales-card"><div class="num" id="salesOrders">0</div><div class="label">Orders</div></div>
       <div class="sales-card"><div class="num" id="salesTotal">₹0</div><div class="label">Total Sales</div></div>
+    </div>
+
+    <div style="margin:24px 0 10px; font-size:12px; font-weight:800; color:var(--cream-dim); text-transform:uppercase; letter-spacing:.05em;">By Payment Mode</div>
+    <div class="sales-grid" style="grid-template-columns:1fr 1fr;">
+      <div class="sales-card">
+        <div class="num" id="salesCashTotal" style="color:var(--basil);">₹0</div>
+        <div class="label">💵 Cash (<span id="salesCashCount">0</span> orders)</div>
+      </div>
+      <div class="sales-card">
+        <div class="num" id="salesUpiTotal" style="color:var(--blue);">₹0</div>
+        <div class="label">📱 UPI (<span id="salesUpiCount">0</span> orders)</div>
+      </div>
     </div>
   </div>
 </div>
@@ -670,14 +686,17 @@ function orderCardHTML(order){
           <div class="order-id">#${String(order.id).padStart(4,'0')} · ${order.order_type}</div>
           <div class="order-time">${timeAgo(order.created_at)}</div>
         </div>
-        <span class="status-badge ${order.status}">${order.status}</span>
+        <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
+          <span class="status-badge ${order.status}">${order.status}</span>
+          <span style="font-size:10px; font-weight:800; padding:3px 8px; border-radius:999px; background:${order.payment_mode === 'UPI' ? 'rgba(74,127,181,0.18)' : 'rgba(92,138,70,0.18)'}; color:${order.payment_mode === 'UPI' ? 'var(--blue)' : 'var(--basil)'};">${order.payment_mode === 'UPI' ? '📱 UPI' : '💵 CASH'}</span>
+        </div>
       </div>
       <div class="order-customer">
         <strong>${order.customer_name}</strong> · ${order.customer_phone}<br>
         ${order.customer_address}
       </div>
       <div class="order-items">${itemsHTML}</div>
-      <div class="order-total"><span>Total (COD)</span><span>₹${Number(order.total_amount).toFixed(0)}</span></div>
+      <div class="order-total"><span>Total</span><span>₹${Number(order.total_amount).toFixed(0)}</span></div>
       <div class="order-actions">${actionsHTML}</div>
     </div>
   `;
@@ -872,13 +891,27 @@ document.getElementById('deleteItemBtn').onclick = async () => {
 // ======================================================
 async function loadSales(){
   try{
-    const res = await fetch(`${API_BASE}/orders/sales-summary`);
+    const dateInput = document.getElementById('salesDateInput');
+    if(!dateInput.value){
+      dateInput.value = new Date().toISOString().slice(0, 10);
+    }
+    const selectedDate = dateInput.value;
+
+    const res = await fetch(`${API_BASE}/orders/sales-summary?date=${selectedDate}`);
     const data = await res.json();
     if(!data.success) return;
     document.getElementById('salesOrders').textContent = data.summary.totalOrders;
     document.getElementById('salesTotal').textContent = '₹' + Number(data.summary.totalSales).toFixed(0);
+
+    const byMode = data.summary.byMode || {};
+    document.getElementById('salesCashTotal').textContent = '₹' + Number(byMode.COD?.totalAmount || 0).toFixed(0);
+    document.getElementById('salesCashCount').textContent = byMode.COD?.orderCount || 0;
+    document.getElementById('salesUpiTotal').textContent = '₹' + Number(byMode.UPI?.totalAmount || 0).toFixed(0);
+    document.getElementById('salesUpiCount').textContent = byMode.UPI?.orderCount || 0;
   }catch(e){ /* ignore */ }
 }
+
+document.getElementById('salesDateInput').addEventListener('change', loadSales);
 
 // ======================================================
 // BILLING TAB (walk-in counter orders)
@@ -1127,6 +1160,15 @@ function printReceipt(orderId, customerName, items, total){
     </html>
   `);
   receiptWindow.document.close();
+}
+
+// ======================================================
+// PWA — register service worker (makes admin panel installable)
+// ======================================================
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => { /* ignore if not supported */ });
+  });
 }
 </script>
 </body>
