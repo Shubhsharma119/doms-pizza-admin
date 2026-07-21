@@ -444,6 +444,14 @@
       <label>Description</label>
       <textarea id="itemDescription" placeholder="Short description (optional)"></textarea>
     </div>
+    <div class="field">
+      <label>Photo URL</label>
+      <input type="text" id="itemImageUrl" placeholder="https://... (paste an image link)">
+      <button type="button" id="autoFillPhotoBtn" style="margin-top:8px; background:var(--surface-2); color:var(--gold); border:1px solid var(--line); padding:9px 14px; border-radius:10px; font-size:12.5px; font-weight:700;">🎲 Auto-fill Real Food Photo</button>
+      <div id="photoPreviewWrap" style="margin-top:10px; display:none;">
+        <img id="photoPreview" style="width:100%; max-width:200px; aspect-ratio:1; object-fit:cover; border-radius:10px; border:1px solid var(--line);">
+      </div>
+    </div>
     <div class="checkbox-row">
       <input type="checkbox" id="itemHasSizes">
       <label style="margin:0; text-transform:none; font-size:13px; color:var(--cream);">This item has sizes (Small/Medium/Large) — like pizza</label>
@@ -741,6 +749,7 @@ async function loadMenu(){
       cat.items.forEach(item=>{
         html += `
           <div class="menu-item-row">
+            ${item.image_url ? `<img src="${item.image_url}" alt="${item.name}" style="width:44px; height:44px; border-radius:8px; object-fit:cover; flex:0 0 auto;">` : `<div style="width:44px; height:44px; border-radius:8px; background:var(--surface-2); flex:0 0 auto;"></div>`}
             <div class="menu-item-info">
               <div class="menu-item-name">${item.name}</div>
               <div class="menu-item-cat">${item.food_type}${item.has_sizes ? ' · Sizes' : ''}</div>
@@ -803,6 +812,8 @@ document.getElementById('addItemBtn').onclick = () => {
   document.getElementById('itemName').value = '';
   document.getElementById('itemFoodType').value = 'Veg';
   document.getElementById('itemDescription').value = '';
+  document.getElementById('itemImageUrl').value = '';
+  document.getElementById('photoPreviewWrap').style.display = 'none';
   document.getElementById('itemHasSizes').checked = false;
   document.getElementById('itemBasePrice').value = '';
   document.getElementById('itemMediumPrice').value = '';
@@ -822,6 +833,13 @@ function openEditItem(itemId){
   document.getElementById('itemName').value = item.name;
   document.getElementById('itemFoodType').value = item.food_type;
   document.getElementById('itemDescription').value = item.description || '';
+  document.getElementById('itemImageUrl').value = item.image_url || '';
+  if(item.image_url){
+    document.getElementById('photoPreview').src = item.image_url;
+    document.getElementById('photoPreviewWrap').style.display = 'block';
+  }else{
+    document.getElementById('photoPreviewWrap').style.display = 'none';
+  }
   document.getElementById('itemHasSizes').checked = !!item.has_sizes;
   document.getElementById('itemBasePrice').value = item.base_price;
   document.getElementById('itemMediumPrice').value = item.medium_price || '';
@@ -840,11 +858,62 @@ function toggleSizeFields(){
 
 document.getElementById('itemSheetClose').onclick = () => document.getElementById('itemOverlay').classList.remove('open');
 
+// ======================================================
+// AUTO-FILL REAL FOOD PHOTO (via Foodish API, fetched client-side)
+// ======================================================
+function mapCategoryToFoodishType(categoryName){
+  const map = {
+    'Pizza': 'pizza',
+    'Burger': 'burger',
+    'Pasta': 'pasta',
+    'Desserts': 'dessert',
+    'Chinese': 'momos'
+  };
+  return map[categoryName] || null; // null = no good match, use random
+}
+
+document.getElementById('autoFillPhotoBtn').onclick = async () => {
+  const btn = document.getElementById('autoFillPhotoBtn');
+  const catId = Number(document.getElementById('itemCategory').value);
+  const cat = categories.find(c => c.id === catId);
+  const foodishType = cat ? mapCategoryToFoodishType(cat.name) : null;
+
+  const url = foodishType
+    ? `https://foodish-api.com/api/images/${foodishType}`
+    : `https://foodish-api.com/api/`;
+
+  btn.disabled = true; btn.textContent = '🎲 Fetching...';
+
+  try{
+    const res = await fetch(url);
+    const data = await res.json();
+    if(data.image){
+      document.getElementById('itemImageUrl').value = data.image;
+      document.getElementById('photoPreview').src = data.image;
+      document.getElementById('photoPreviewWrap').style.display = 'block';
+    }
+  }catch(err){
+    alert('Photo fetch nahi ho paayi, dubara try karo ya manually URL paste karo');
+  }finally{
+    btn.disabled = false; btn.textContent = '🎲 Auto-fill Real Food Photo';
+  }
+};
+
+document.getElementById('itemImageUrl').addEventListener('input', (e) => {
+  if(e.target.value){
+    document.getElementById('photoPreview').src = e.target.value;
+    document.getElementById('photoPreviewWrap').style.display = 'block';
+  }else{
+    document.getElementById('photoPreviewWrap').style.display = 'none';
+  }
+});
+
 document.getElementById('saveItemBtn').onclick = async () => {
   const name = document.getElementById('itemName').value.trim();
   const category_id = Number(document.getElementById('itemCategory').value);
   const food_type = document.getElementById('itemFoodType').value;
   const description = document.getElementById('itemDescription').value.trim();
+  const image_url = document.getElementById('itemImageUrl').value.trim();
   const has_sizes = document.getElementById('itemHasSizes').checked;
   const base_price = Number(document.getElementById('itemBasePrice').value);
   const medium_price = document.getElementById('itemMediumPrice').value ? Number(document.getElementById('itemMediumPrice').value) : null;
@@ -859,12 +928,12 @@ document.getElementById('saveItemBtn').onclick = async () => {
     if(editingItemId){
       await fetch(`${API_BASE}/menu/${editingItemId}`, {
         method:'PUT', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ name, food_type, description, base_price, medium_price, large_price, is_available: true })
+        body: JSON.stringify({ name, food_type, description, image_url, base_price, medium_price, large_price, is_available: true })
       });
     }else{
       await fetch(`${API_BASE}/menu`, {
         method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ category_id, name, food_type, description, has_sizes, base_price, medium_price, large_price })
+        body: JSON.stringify({ category_id, name, food_type, description, image_url, has_sizes, base_price, medium_price, large_price })
       });
     }
     document.getElementById('itemOverlay').classList.remove('open');
