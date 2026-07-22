@@ -326,6 +326,7 @@
     <button class="tab-btn" data-tab="billing"><span class="tab-icon">🖨️</span> Billing</button>
     <button class="tab-btn" data-tab="menu"><span class="tab-icon">🍕</span> Menu</button>
     <button class="tab-btn" data-tab="sales"><span class="tab-icon">📊</span> Sales</button>
+    <button class="tab-btn" data-tab="analytics"><span class="tab-icon">📈</span> Analytics</button>
   </div>
 
   <!-- ORDERS PAGE -->
@@ -383,6 +384,23 @@
         <div class="label">📱 UPI (<span id="salesUpiCount">0</span> orders)</div>
       </div>
     </div>
+  </div>
+
+  <!-- ANALYTICS PAGE -->
+  <div class="page" id="page-analytics">
+    <div class="page-header"><h2>Analytics</h2></div>
+
+    <div style="font-size:12px; font-weight:800; color:var(--cream-dim); text-transform:uppercase; letter-spacing:.05em; margin-bottom:10px;">🏆 Best Sellers (Last 30 Days)</div>
+    <div id="bestSellersList" style="margin-bottom:24px;"></div>
+
+    <div style="font-size:12px; font-weight:800; color:var(--cream-dim); text-transform:uppercase; letter-spacing:.05em; margin-bottom:10px;">⏰ Peak Ordering Hours</div>
+    <div id="peakHoursChart" style="display:flex; align-items:flex-end; gap:2px; height:120px; margin-bottom:8px; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px;"></div>
+    <div style="font-size:10.5px; color:var(--cream-dim); display:flex; justify-content:space-between; margin-bottom:24px;">
+      <span>12 AM</span><span>6 AM</span><span>12 PM</span><span>6 PM</span><span>11 PM</span>
+    </div>
+
+    <div style="font-size:12px; font-weight:800; color:var(--cream-dim); text-transform:uppercase; letter-spacing:.05em; margin-bottom:10px;">📅 Last 7 Days</div>
+    <div id="weeklyTrendChart"></div>
   </div>
 </div>
 
@@ -584,6 +602,7 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
     if(btn.dataset.tab === 'billing') loadBillingMenu();
     if(btn.dataset.tab === 'menu') loadMenu();
     if(btn.dataset.tab === 'sales') loadSales();
+    if(btn.dataset.tab === 'analytics') loadAnalytics();
   };
 });
 
@@ -1197,6 +1216,83 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('sw.js').catch(() => { /* ignore if not supported */ });
   });
+}
+
+// ======================================================
+// ANALYTICS TAB
+// ======================================================
+async function loadAnalytics(){
+  loadBestSellers();
+  loadPeakHours();
+  loadWeeklyTrend();
+}
+
+async function loadBestSellers(){
+  const list = document.getElementById('bestSellersList');
+  list.innerHTML = `<div class="empty-state"><div class="display">Loading...</div></div>`;
+  try{
+    const res = await fetch(`${API_BASE}/orders/analytics/best-sellers?days=30`);
+    const data = await res.json();
+    if(!data.success || data.items.length === 0){
+      list.innerHTML = `<div class="empty-state"><div class="display">No sales data yet</div></div>`;
+      return;
+    }
+    const maxSold = Math.max(...data.items.map(i => i.totalSold));
+    list.innerHTML = data.items.map((item, idx) => `
+      <div style="background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin-bottom:8px;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+          <span style="font-weight:700; font-size:13.5px;">${idx+1}. ${item.name}</span>
+          <span style="font-weight:700; font-size:13px; color:var(--gold);">${item.totalSold} sold</span>
+        </div>
+        <div style="background:var(--surface-2); border-radius:999px; height:6px; overflow:hidden;">
+          <div style="background:var(--tomato); height:100%; width:${(item.totalSold/maxSold*100).toFixed(0)}%;"></div>
+        </div>
+      </div>
+    `).join('');
+  }catch(err){
+    list.innerHTML = `<div class="empty-state"><div class="display">Couldn't load</div></div>`;
+  }
+}
+
+async function loadPeakHours(){
+  const chart = document.getElementById('peakHoursChart');
+  try{
+    const res = await fetch(`${API_BASE}/orders/analytics/peak-hours?days=30`);
+    const data = await res.json();
+    if(!data.success) return;
+
+    const maxCount = Math.max(...data.hourly.map(h => h.orderCount), 1);
+    chart.innerHTML = data.hourly.map(h => `
+      <div style="flex:1; display:flex; flex-direction:column; justify-content:flex-end; height:100%;" title="${h.hour}:00 - ${h.orderCount} orders">
+        <div style="background:${h.orderCount > 0 ? 'var(--gold)' : 'var(--surface-2)'}; border-radius:3px 3px 0 0; height:${Math.max((h.orderCount/maxCount*100), 3).toFixed(0)}%;"></div>
+      </div>
+    `).join('');
+  }catch(err){ /* ignore */ }
+}
+
+async function loadWeeklyTrend(){
+  const chart = document.getElementById('weeklyTrendChart');
+  chart.innerHTML = `<div class="empty-state"><div class="display">Loading...</div></div>`;
+  try{
+    const res = await fetch(`${API_BASE}/orders/analytics/weekly-trend`);
+    const data = await res.json();
+    if(!data.success || data.days.length === 0){
+      chart.innerHTML = `<div class="empty-state"><div class="display">No data yet</div></div>`;
+      return;
+    }
+    const maxRevenue = Math.max(...data.days.map(d => d.revenue), 1);
+    chart.innerHTML = data.days.map(d => `
+      <div style="background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <div style="font-weight:700; font-size:13px;">${new Date(d.date).toLocaleDateString('en-IN', {weekday:'short', day:'numeric', month:'short'})}</div>
+          <div style="font-size:11px; color:var(--cream-dim);">${d.orderCount} orders</div>
+        </div>
+        <div style="font-weight:800; color:var(--gold); font-size:14px;">₹${d.revenue.toFixed(0)}</div>
+      </div>
+    `).join('');
+  }catch(err){
+    chart.innerHTML = `<div class="empty-state"><div class="display">Couldn't load</div></div>`;
+  }
 }
 </script>
 </body>
