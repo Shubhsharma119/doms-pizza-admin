@@ -447,7 +447,7 @@
     <div class="field">
       <label>Photo URL</label>
       <input type="text" id="itemImageUrl" placeholder="https://... (paste an image link)">
-      <button type="button" id="autoFillPhotoBtn" style="margin-top:8px; background:var(--surface-2); color:var(--gold); border:1px solid var(--line); padding:9px 14px; border-radius:10px; font-size:12.5px; font-weight:700;">🎲 Auto-fill Real Food Photo</button>
+      <p style="font-size:11px; color:var(--cream-dim); margin:8px 0 0;">Tip: Google image search karo, sahi photo pe right-click karo, "Copy image address" select karo, yahan paste karo.</p>
       <div id="photoPreviewWrap" style="margin-top:10px; display:none;">
         <img id="photoPreview" style="width:100%; max-width:200px; aspect-ratio:1; object-fit:cover; border-radius:10px; border:1px solid var(--line);">
       </div>
@@ -857,48 +857,6 @@ function toggleSizeFields(){
 }
 
 document.getElementById('itemSheetClose').onclick = () => document.getElementById('itemOverlay').classList.remove('open');
-
-// ======================================================
-// AUTO-FILL REAL FOOD PHOTO (via Foodish API, fetched client-side)
-// ======================================================
-function mapCategoryToFoodishType(categoryName){
-  const map = {
-    'Pizza': 'pizza',
-    'Burger': 'burger',
-    'Pasta': 'pasta',
-    'Desserts': 'dessert',
-    'Chinese': 'momos'
-  };
-  return map[categoryName] || null; // null = no good match, use random
-}
-
-document.getElementById('autoFillPhotoBtn').onclick = async () => {
-  const btn = document.getElementById('autoFillPhotoBtn');
-  const catId = Number(document.getElementById('itemCategory').value);
-  const cat = categories.find(c => c.id === catId);
-  const foodishType = cat ? mapCategoryToFoodishType(cat.name) : null;
-
-  btn.disabled = true; btn.textContent = '🎲 Fetching...';
-
-  try{
-    const url = foodishType
-      ? `${API_BASE}/menu/random-photo?type=${foodishType}`
-      : `${API_BASE}/menu/random-photo`;
-    const res = await fetch(url);
-    const data = await res.json();
-    if(data.success && data.image){
-      document.getElementById('itemImageUrl').value = data.image;
-      document.getElementById('photoPreview').src = data.image;
-      document.getElementById('photoPreviewWrap').style.display = 'block';
-    }else{
-      throw new Error('No image returned');
-    }
-  }catch(err){
-    alert('Photo fetch nahi ho paayi, dubara try karo ya manually URL paste karo');
-  }finally{
-    btn.disabled = false; btn.textContent = '🎲 Auto-fill Real Food Photo';
-  }
-};
 
 document.getElementById('itemImageUrl').addEventListener('input', (e) => {
   if(e.target.value){
