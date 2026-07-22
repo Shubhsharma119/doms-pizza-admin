@@ -878,19 +878,20 @@ document.getElementById('autoFillPhotoBtn').onclick = async () => {
   const cat = categories.find(c => c.id === catId);
   const foodishType = cat ? mapCategoryToFoodishType(cat.name) : null;
 
-  const url = foodishType
-    ? `https://foodish-api.com/api/images/${foodishType}`
-    : `https://foodish-api.com/api/`;
-
   btn.disabled = true; btn.textContent = '🎲 Fetching...';
 
   try{
+    const url = foodishType
+      ? `${API_BASE}/menu/random-photo?type=${foodishType}`
+      : `${API_BASE}/menu/random-photo`;
     const res = await fetch(url);
     const data = await res.json();
-    if(data.image){
+    if(data.success && data.image){
       document.getElementById('itemImageUrl').value = data.image;
       document.getElementById('photoPreview').src = data.image;
       document.getElementById('photoPreviewWrap').style.display = 'block';
+    }else{
+      throw new Error('No image returned');
     }
   }catch(err){
     alert('Photo fetch nahi ho paayi, dubara try karo ya manually URL paste karo');
