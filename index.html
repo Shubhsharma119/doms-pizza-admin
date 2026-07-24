@@ -1081,6 +1081,7 @@ function renderBillingFab(){
   document.getElementById('billingFabTotal').textContent = '₹' + billingCartTotal().toFixed(0);
   const billingTabActive = document.getElementById('page-billing').classList.contains('active');
   document.getElementById('billingFab').classList.toggle('visible', count > 0 && billingTabActive);
+
 }
 
 document.getElementById('billingFabBtn').onclick = () => {
