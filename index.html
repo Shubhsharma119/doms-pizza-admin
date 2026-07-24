@@ -603,6 +603,7 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
     if(btn.dataset.tab === 'menu') loadMenu();
     if(btn.dataset.tab === 'sales') loadSales();
     if(btn.dataset.tab === 'analytics') loadAnalytics();
+    renderBillingFab();
   };
 });
 
@@ -1078,7 +1079,8 @@ function renderBillingFab(){
   const count = billingCartCount();
   document.getElementById('billingFabCount').textContent = count + (count===1 ? ' item' : ' items');
   document.getElementById('billingFabTotal').textContent = '₹' + billingCartTotal().toFixed(0);
-  document.getElementById('billingFab').classList.toggle('visible', count > 0);
+  const billingTabActive = document.getElementById('page-billing').classList.contains('active');
+  document.getElementById('billingFab').classList.toggle('visible', count > 0 && billingTabActive);
 }
 
 document.getElementById('billingFabBtn').onclick = () => {
