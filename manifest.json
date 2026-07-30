@@ -1,11 +1,11 @@
 {
-  "name": "Dom's Pizza",
-  "short_name": "Dom's Pizza",
-  "description": "Order fresh pizza, burgers, sides and more from Dom's Pizza",
+  "name": "Dom's Pizza Admin",
+  "short_name": "Dom's Admin",
+  "description": "Order management, billing and menu control for Dom's Pizza",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#1B1410",
-  "theme_color": "#1B1410",
+  "background_color": "#15100D",
+  "theme_color": "#15100D",
   "orientation": "portrait",
   "icons": [
     {
