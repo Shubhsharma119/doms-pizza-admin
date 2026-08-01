@@ -460,13 +460,6 @@
       <select id="itemCategory"></select>
     </div>
     <div class="field">
-      <label>Food Type</label>
-      <select id="itemFoodType">
-        <option value="Veg">Veg</option>
-        <option value="Non-Veg">Non-Veg</option>
-      </select>
-    </div>
-    <div class="field">
       <label>Description</label>
       <textarea id="itemDescription" placeholder="Short description (optional)"></textarea>
     </div>
@@ -838,7 +831,6 @@ document.getElementById('addItemBtn').onclick = () => {
   document.getElementById('deleteItemBtn').style.display = 'none';
   populateCategoryDropdown();
   document.getElementById('itemName').value = '';
-  document.getElementById('itemFoodType').value = 'Veg';
   document.getElementById('itemDescription').value = '';
   document.getElementById('itemImageUrl').value = '';
   document.getElementById('photoPreviewWrap').style.display = 'none';
@@ -859,7 +851,6 @@ function openEditItem(itemId){
   populateCategoryDropdown();
   document.getElementById('itemCategory').value = item.category_id;
   document.getElementById('itemName').value = item.name;
-  document.getElementById('itemFoodType').value = item.food_type;
   document.getElementById('itemDescription').value = item.description || '';
   document.getElementById('itemImageUrl').value = item.image_url || '';
   if(item.image_url){
@@ -898,7 +889,7 @@ document.getElementById('itemImageUrl').addEventListener('input', (e) => {
 document.getElementById('saveItemBtn').onclick = async () => {
   const name = document.getElementById('itemName').value.trim();
   const category_id = Number(document.getElementById('itemCategory').value);
-  const food_type = document.getElementById('itemFoodType').value;
+  const food_type = 'Veg'; // shop is pure veg, no selection needed
   const description = document.getElementById('itemDescription').value.trim();
   const image_url = document.getElementById('itemImageUrl').value.trim();
   const has_sizes = document.getElementById('itemHasSizes').checked;
