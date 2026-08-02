@@ -544,7 +544,7 @@ async function attemptLogin(){
   const errBox = document.getElementById('loginError');
   errBox.style.display = 'none';
 
-  if(!username || !password){ errBox.textContent = 'Username aur password dono zaroori hain'; errBox.style.display='block'; return; }
+  if(!username || !password){ errBox.textContent = 'Fill Username And Password'; errBox.style.display='block'; return; }
 
   btn.disabled = true;
   btn.textContent = 'Logging in...';
