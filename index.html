@@ -312,7 +312,7 @@
       <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password">
     </div>
     <button class="btn-primary" id="loginBtn">Log In</button>
-    <div class="login-error" id="loginError">Galat username ya password</div>
+    <div class="login-error" id="loginError">Wrong Username or Password</div>
   </div>
 </div>
 
@@ -561,7 +561,7 @@ async function attemptLogin(){
     localStorage.setItem('domsPizzaAdminToken', authToken);
     showApp();
   }catch(err){
-    errBox.textContent = err.message.includes('fetch') ? 'Server se connect nahi ho paaya' : 'Galat username ya password';
+    errBox.textContent = err.message.includes('fetch') ? 'could not connect to the sever' : 'Wrong Username Or Password';
     errBox.style.display = 'block';
   }finally{
     btn.disabled = false;
@@ -740,7 +740,7 @@ async function updateOrderStatus(orderId, status){
     loadOrders();
     loadSales();
   }catch(err){
-    alert('Status update nahi ho paaya');
+    alert('Status update failed');
   }
 }
 
@@ -897,7 +897,7 @@ document.getElementById('saveItemBtn').onclick = async () => {
   const medium_price = document.getElementById('itemMediumPrice').value ? Number(document.getElementById('itemMediumPrice').value) : null;
   const large_price = document.getElementById('itemLargePrice').value ? Number(document.getElementById('itemLargePrice').value) : null;
 
-  if(!name || !base_price){ alert('Naam aur price zaroori hai'); return; }
+  if(!name || !base_price){ alert('Name and price are essential'); return; }
 
   const btn = document.getElementById('saveItemBtn');
   btn.disabled = true; btn.textContent = 'Saving...';
@@ -925,12 +925,12 @@ document.getElementById('saveItemBtn').onclick = async () => {
 
 document.getElementById('deleteItemBtn').onclick = async () => {
   if(!editingItemId) return;
-  if(!confirm('Yeh item permanently delete karna hai?')) return;
+  if(!confirm('item is to be permanently deleted?')) return;
   try{
     await fetch(`${API_BASE}/menu/${editingItemId}`, { method:'DELETE' });
     document.getElementById('itemOverlay').classList.remove('open');
     loadMenu();
-  }catch(err){ alert('Delete nahi ho paaya'); }
+  }catch(err){ alert('Deletion failed'); }
 };
 
 // ======================================================
@@ -1137,7 +1137,7 @@ document.getElementById('billingCustPhone').addEventListener('input', (e) => {
 });
 
 document.getElementById('createBillBtn').onclick = async () => {
-  if(billingCart.length === 0){ alert('Pehle kuch items add karo'); return; }
+  if(billingCart.length === 0){ alert('Add Some Item First'); return; }
 
   const name = document.getElementById('billingCustName').value.trim() || 'Walk-in Customer';
   const phoneInput = document.getElementById('billingCustPhone').value.trim();
