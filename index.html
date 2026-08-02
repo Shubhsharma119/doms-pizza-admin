@@ -411,7 +411,7 @@
     <div id="weeklyTrendChart"></div>
   </div>
 </div>
-
+<div id="billingCartPreview" class="cart-preview"></div>
 <!-- ============ BILLING CART FLOATING BAR ============ -->
 <div class="cart-fab" id="billingFab">
   <div class="cart-fab-left">
@@ -1080,6 +1080,7 @@ function renderBillingFab(){
   document.getElementById('billingFabTotal').textContent = '₹' + billingCartTotal().toFixed(0);
   const billingTabActive = document.getElementById('page-billing').classList.contains('active');
   document.getElementById('billingFab').classList.toggle('visible', count > 0 && billingTabActive);
+  renderBillingPreview();
 }
 
 document.getElementById('billingFabBtn').onclick = () => {
@@ -1131,7 +1132,33 @@ function renderBillingCartSheet(){
     <div class="totals-row grand"><span>Total (Cash)</span><span>₹${billingCartTotal().toFixed(0)}</span></div>
   `;
 }
+function renderBillingPreview() {
+  const box = document.getElementById('billingCartPreview');
 
+  if (!box) return;
+
+  if (billingCart.length === 0) {
+    box.innerHTML = '';
+    return;
+  }
+
+  box.innerHTML = billingCart.map(item => `
+    <div class="cart-line">
+      <div class="cart-line-info">
+        <div class="cart-line-name">
+          ${item.name} ${item.size !== 'Regular' ? `(${item.size})` : ''}
+        </div>
+        <div class="cart-line-price">
+          Qty: ${item.quantity}
+        </div>
+      </div>
+
+      <div style="font-weight:700">
+        ₹${(item.price * item.quantity).toFixed(0)}
+      </div>
+    </div>
+  `).join('');
+}
 document.getElementById('billingCustPhone').addEventListener('input', (e) => {
   e.target.value = e.target.value.replace(/[^0-9]/g, '').slice(0, 10);
 });
