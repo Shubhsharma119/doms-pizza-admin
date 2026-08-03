@@ -74,7 +74,7 @@
   /* ============ APP SHELL ============ */
   #appScreen{ display:none; min-height:100vh; padding-bottom: 76px; }
   .topbar{
-    position:sticky; top:0; z-index:30;
+    position:sticky; top:0; z-index:50;
     display:flex; align-items:center; justify-content:space-between;
     padding:16px 20px; background:rgba(21,16,13,0.97); backdrop-filter:blur(6px);
     border-bottom:1px solid var(--line);
@@ -1644,5 +1644,23 @@ document.getElementById("savePasswordBtn").addEventListener("click", async () =>
     }
 });
 </script>
+<!-- ============ CHANGE PASSWORD MODAL ============ -->
+<div class="modal" id="changePasswordModal">
+  <div class="modal-content" style="background: var(--surface); color: var(--cream); border: 1px solid var(--line);">
+    <h2 style="color: var(--cream);">Change Password</h2>
+    <div class="field">
+      <label>Old Password</label>
+      <input type="password" id="oldPassInput" placeholder="Current Password">
+    </div>
+    <div class="field">
+      <label>New Password</label>
+      <input type="password" id="newPassInput" placeholder="New Password">
+    </div>
+    <div style="display: flex; gap: 10px; margin-top: 15px;">
+      <button class="btn-primary" id="savePasswordBtn">Update</button>
+      <button class="action-btn" id="closePassModalBtn" style="background: var(--surface-2); color: var(--cream);">Cancel</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
