@@ -358,6 +358,7 @@
     <div class="page-header"><h2>New Bill</h2></div>
     <div class="chip-row" id="billingChipRow"></div>
     <div id="billingMenuList"><div class="empty-state"><div class="display">Loading menu...</div></div></div>
+    <div id="billingCartPreview" class="cart-preview"></div>
   </div>
 
   <!-- MENU PAGE -->
@@ -411,7 +412,6 @@
     <div id="weeklyTrendChart"></div>
   </div>
 </div>
-<div id="billingCartPreview" class="cart-preview"></div>
 <!-- ============ BILLING CART FLOATING BAR ============ -->
 <div class="cart-fab" id="billingFab">
   <div class="cart-fab-left">
@@ -1080,9 +1080,227 @@ function renderBillingFab(){
   document.getElementById('billingFabTotal').textContent = '₹' + billingCartTotal().toFixed(0);
   const billingTabActive = document.getElementById('page-billing').classList.contains('active');
   document.getElementById('billingFab').classList.toggle('visible', count > 0 && billingTabActive);
-  renderBillingPreview();
-}
+   renderBillingPreview(); 
+  function renderBillingCartSheet(){
+  const body = document.getElementById('billingCartBody');
+  if(billingCart.length === 0){
+    body.innerHTML = `<div class="empty-state"><div class="display">No items added</div></div>`;
+    document.getElementById('billingTotals').innerHTML = '';
+    return;
+  }
 
+  body.innerHTML = billingCart.map((line, idx) => `
+    <div class="cart-line">
+      <div class="cart-line-info">
+        <div class="cart-line-name">${line.name} ${line.size !== 'Regular' ? `(${line.size})` : ''}</div>
+        <div class="cart-line-price">₹${line.price} × ${line.quantity} = ₹${(line.price*line.quantity).toFixed(0)}</div>
+      </div>
+      <div class="cart-line-actions">
+        <button class="remove-link" data-remove="${idx}">Remove</button>
+        <div class="qty-control">
+          <button class="qty-btn" data-minus="${idx}">-</button>
+          <span style="font-weight:700; min-width:16px; text-align:center;">${line.quantity}</span>
+          <button class="qty-btn" data-plus="${idx}">+</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  body.querySelectorAll('[data-remove]').forEach(btn=>{
+    btn.onclick = () => { billingCart.splice(Number(btn.dataset.remove),1); renderBillingCartSheet(); renderBillingFab(); };
+  });
+  body.querySelectorAll('[data-minus]').forEach(btn=>{
+    btn.onclick = () => {
+      const i = Number(btn.dataset.minus);
+      if(billingCart[i].quantity > 1){ billingCart[i].quantity--; } else { billingCart.splice(i,1); }
+      renderBillingCartSheet(); renderBillingFab();
+    };
+  });
+  body.querySelectorAll('[data-plus]').forEach(btn=>{
+    btn.onclick = () => { billingCart[Number(btn.dataset.plus)].quantity++; renderBillingCartSheet(); renderBillingFab(); };
+  });
+
+  document.getElementById('billingTotals').innerHTML = `
+    <div class="totals-row grand"><span>Total (Cash)</span><span>₹${billingCartTotal().toFixed(0)}</span></div>
+  `;
+}
+function renderBillingPreview() {
+  const box = document.getElementById('billingCartPreview');
+
+  if (!box) return;
+
+  if (billingCart.length === 0) {
+    box.innerHTML = '';
+    return;
+  }
+
+  box.innerHTML = billingCart.map(item => `
+    <div class="cart-line">
+      <div class="cart-line-info">
+        <div class="cart-line-name">
+          ${item.name} ${item.size !== 'Regular' ? `(${item.size})` : ''}
+        </div>
+        <div class="cart-line-price">
+          Qty: ${item.quantity}
+        </div>
+      </div>
+
+      <div style="font-weight:700">
+        ₹${(item.price * item.quantity).toFixed(0)}
+      </div>
+    </div>
+  `).join('');
+}
+document.getElementById('billingCustPhone').addEventListener('input', (e) => {
+  e.target.value = e.target.value.replace(/[^0-9]/g, '').slice(0, 10);
+});
+
+document.getElementById('createBillBtn').onclick = async () => {
+  if(billingCart.length === 0){ alert('Add Some Item First'); return; }
+
+  const name = document.getElementById('billingCustName').value.trim() || 'Walk-in Customer';
+  const phoneInput = document.getElementById('billingCustPhone').value.trim();
+  const phone = phoneInput.length === 10 ? phoneInput : '0000000000';
+
+  const btn = document.getElementById('createBillBtn');
+  btn.disabled = true; btn.textContent = 'Creating bill...';
+
+  try{
+    const res = await fetch(`${API_BASE}/orders`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        name, phone, address: 'In-store purchase',
+        order_type: 'Walk-in', items: billingCart
+      })
+    });
+    const data = await res.json();
+    if(!data.success) throw new Error(data.message || 'Failed');
+
+    printReceipt(data.order_id, name, billingCart, data.total_amount);
+
+    billingCart = [];
+    renderBillingFab();
+    document.getElementById('billingOverlay').classList.remove('open');
+    document.getElementById('billingCustName').value = '';
+    document.getElementById('billingCustPhone').value = '';
+    loadSales();
+  }catch(err){
+    alert('Bill create nahi ho paayi: ' + err.message);
+  }finally{
+    btn.disabled = false; btn.textContent = 'Create & Print Bill';
+  }
+};
+  function renderBillingCartSheet(){
+  const body = document.getElementById('billingCartBody');
+  if(billingCart.length === 0){
+    body.innerHTML = `<div class="empty-state"><div class="display">No items added</div></div>`;
+    document.getElementById('billingTotals').innerHTML = '';
+    return;
+  }
+
+  body.innerHTML = billingCart.map((line, idx) => `
+    <div class="cart-line">
+      <div class="cart-line-info">
+        <div class="cart-line-name">${line.name} ${line.size !== 'Regular' ? `(${line.size})` : ''}</div>
+        <div class="cart-line-price">₹${line.price} × ${line.quantity} = ₹${(line.price*line.quantity).toFixed(0)}</div>
+      </div>
+      <div class="cart-line-actions">
+        <button class="remove-link" data-remove="${idx}">Remove</button>
+        <div class="qty-control">
+          <button class="qty-btn" data-minus="${idx}">-</button>
+          <span style="font-weight:700; min-width:16px; text-align:center;">${line.quantity}</span>
+          <button class="qty-btn" data-plus="${idx}">+</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  body.querySelectorAll('[data-remove]').forEach(btn=>{
+    btn.onclick = () => { billingCart.splice(Number(btn.dataset.remove),1); renderBillingCartSheet(); renderBillingFab(); };
+  });
+  body.querySelectorAll('[data-minus]').forEach(btn=>{
+    btn.onclick = () => {
+      const i = Number(btn.dataset.minus);
+      if(billingCart[i].quantity > 1){ billingCart[i].quantity--; } else { billingCart.splice(i,1); }
+      renderBillingCartSheet(); renderBillingFab();
+    };
+  });
+  body.querySelectorAll('[data-plus]').forEach(btn=>{
+    btn.onclick = () => { billingCart[Number(btn.dataset.plus)].quantity++; renderBillingCartSheet(); renderBillingFab(); };
+  });
+
+  document.getElementById('billingTotals').innerHTML = `
+    <div class="totals-row grand"><span>Total (Cash)</span><span>₹${billingCartTotal().toFixed(0)}</span></div>
+  `;
+}
+function renderBillingPreview() {
+  const box = document.getElementById('billingCartPreview');
+
+  if (!box) return;
+
+  if (billingCart.length === 0) {
+    box.innerHTML = '';
+    return;
+  }
+
+  box.innerHTML = billingCart.map(item => `
+    <div class="cart-line">
+      <div class="cart-line-info">
+        <div class="cart-line-name">
+          ${item.name} ${item.size !== 'Regular' ? `(${item.size})` : ''}
+        </div>
+        <div class="cart-line-price">
+          Qty: ${item.quantity}
+        </div>
+      </div>
+
+      <div style="font-weight:700">
+        ₹${(item.price * item.quantity).toFixed(0)}
+      </div>
+    </div>
+  `).join('');
+}
+document.getElementById('billingCustPhone').addEventListener('input', (e) => {
+  e.target.value = e.target.value.replace(/[^0-9]/g, '').slice(0, 10);
+});
+
+document.getElementById('createBillBtn').onclick = async () => {
+  if(billingCart.length === 0){ alert('Add Some Item First'); return; }
+
+  const name = document.getElementById('billingCustName').value.trim() || 'Walk-in Customer';
+  const phoneInput = document.getElementById('billingCustPhone').value.trim();
+  const phone = phoneInput.length === 10 ? phoneInput : '0000000000';
+
+  const btn = document.getElementById('createBillBtn');
+  btn.disabled = true; btn.textContent = 'Creating bill...';
+
+  try{
+    const res = await fetch(`${API_BASE}/orders`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        name, phone, address: 'In-store purchase',
+        order_type: 'Walk-in', items: billingCart
+      })
+    });
+    const data = await res.json();
+    if(!data.success) throw new Error(data.message || 'Failed');
+
+    printReceipt(data.order_id, name, billingCart, data.total_amount);
+
+    billingCart = [];
+    renderBillingFab();
+    document.getElementById('billingOverlay').classList.remove('open');
+    document.getElementById('billingCustName').value = '';
+    document.getElementById('billingCustPhone').value = '';
+    loadSales();
+  }catch(err){
+    alert('Bill create nahi ho paayi: ' + err.message);
+  }finally{
+    btn.disabled = false; btn.textContent = 'Create & Print Bill';
+  }
+};
+
+}
 document.getElementById('billingFabBtn').onclick = () => {
   renderBillingCartSheet();
   document.getElementById('billingOverlay').classList.add('open');
