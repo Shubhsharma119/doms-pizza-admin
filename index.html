@@ -1487,8 +1487,8 @@ function printReceipt(orderId, customerName, items, total){
       <hr>
       <div class="total-row"><span>TOTAL</span><span>₹${Number(total).toFixed(0)}</span></div>
       <div class="footer">Thank you, visit again!</div>
-      <script>window.onload = () => { window.print(); };<\/script>
-    </body>
+     oad = () => { window.print(); };<\/script>
+    </body> <script>window.onl
     </html>
   `);
   receiptWindow.document.close();
@@ -1579,16 +1579,33 @@ async function loadWeeklyTrend(){
     chart.innerHTML = `<div class="empty-state"><div class="display">Couldn't load</div></div>`;
   }
 }
-  document.getElementById("changePasswordBtn").onclick = () => {
+</script>
+  <div id="passwordModal" class="modal" style="display:none;">
+  <div class="modal-content">
+    <h2>🔒 Change Password</h2>
+
+    <input type="password" id="currentPassword" placeholder="Current Password">
+
+    <input type="password" id="newPassword" placeholder="New Password">
+
+    <input type="password" id="confirmPassword" placeholder="Confirm New Password">
+
+    <div style="margin-top:15px; display:flex; gap:10px;">
+      <button id="savePasswordBtn" class="logout-btn">Save</button>
+      <button id="closePasswordBtn" class="logout-btn">Cancel</button>
+    </div>
+  </div>
+</div>
+<script>
+document.getElementById("changePasswordBtn").addEventListener("click", () => {
     document.getElementById("passwordModal").style.display = "flex";
-};
+});
 
-document.getElementById("closePasswordBtn").onclick = () => {
+document.getElementById("closePasswordBtn").addEventListener("click", () => {
     document.getElementById("passwordModal").style.display = "none";
-};
+});
 
-document.getElementById("savePasswordBtn").onclick = async () => {
-
+document.getElementById("savePasswordBtn").addEventListener("click", async () => {
     const currentPassword = document.getElementById("currentPassword").value;
     const newPassword = document.getElementById("newPassword").value;
     const confirmPassword = document.getElementById("confirmPassword").value;
@@ -1618,32 +1635,15 @@ document.getElementById("savePasswordBtn").onclick = async () => {
     const data = await res.json();
 
     if (data.success) {
-        alert("✅ Password changed successfully.");
+        alert("Password changed successfully.");
         document.getElementById("passwordModal").style.display = "none";
-
         document.getElementById("currentPassword").value = "";
         document.getElementById("newPassword").value = "";
         document.getElementById("confirmPassword").value = "";
     } else {
         alert(data.message);
     }
-};
+});
 </script>
-  <div id="passwordModal" class="modal" style="display:none;">
-  <div class="modal-content">
-    <h2>🔒 Change Password</h2>
-
-    <input type="password" id="currentPassword" placeholder="Current Password">
-
-    <input type="password" id="newPassword" placeholder="New Password">
-
-    <input type="password" id="confirmPassword" placeholder="Confirm New Password">
-
-    <div style="margin-top:15px; display:flex; gap:10px;">
-      <button id="savePasswordBtn" class="logout-btn">Save</button>
-      <button id="closePasswordBtn" class="logout-btn">Cancel</button>
-    </div>
-  </div>
-</div>
 </body>
 </html>
