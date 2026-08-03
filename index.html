@@ -293,6 +293,44 @@
   .totals-ticket{ margin-top:14px; padding-top:12px; border-top:2px dashed var(--line); }
   .totals-row{ display:flex; justify-content:space-between; font-size:13px; padding:3px 0; color:var(--cream-dim); }
   .totals-row.grand{ color:var(--cream); font-weight:800; font-size:16px; padding-top:8px; }
+  <style>
+/* Tumhari purani CSS */
+
+/* YAHAN PASTE KARO */
+
+.modal{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.55);
+    z-index:9999;
+    justify-content:center;
+    align-items:center;
+}
+
+.modal-content{
+    background:#fff;
+    width:400px;
+    max-width:90%;
+    padding:25px;
+    border-radius:12px;
+    box-shadow:0 10px 30px rgba(0,0,0,.25);
+}
+
+.modal-content h2{
+    margin:0 0 20px;
+}
+
+.modal-content input{
+    width:100%;
+    padding:12px;
+    margin-bottom:12px;
+    border:1px solid #ccc;
+    border-radius:8px;
+    box-sizing:border-box;
+}
+
+</style>
 </style>
 </head>
 <body>
@@ -324,6 +362,7 @@
       <div class="brand-name">DOM'S <span>PIZZA</span><small>Admin Panel</small></div>
     </div>
     <button class="logout-btn" id="logoutBtn">Log Out</button>
+    <button class="logout-btn" id="changePasswordBtn">🔒 Change Password</button>
   </div>
 
   <div class="tabbar">
@@ -1540,6 +1579,71 @@ async function loadWeeklyTrend(){
     chart.innerHTML = `<div class="empty-state"><div class="display">Couldn't load</div></div>`;
   }
 }
+  document.getElementById("changePasswordBtn").onclick = () => {
+    document.getElementById("passwordModal").style.display = "flex";
+};
+
+document.getElementById("closePasswordBtn").onclick = () => {
+    document.getElementById("passwordModal").style.display = "none";
+};
+
+document.getElementById("savePasswordBtn").onclick = async () => {
+
+    const currentPassword = document.getElementById("currentPassword").value;
+    const newPassword = document.getElementById("newPassword").value;
+    const confirmPassword = document.getElementById("confirmPassword").value;
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+        alert("Please fill all fields.");
+        return;
+    }
+
+    if (newPassword !== confirmPassword) {
+        alert("New Password and Confirm Password do not match.");
+        return;
+    }
+
+    const res = await fetch(`${API_BASE}/admin/change-password`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + authToken
+        },
+        body: JSON.stringify({
+            currentPassword,
+            newPassword
+        })
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+        alert("✅ Password changed successfully.");
+        document.getElementById("passwordModal").style.display = "none";
+
+        document.getElementById("currentPassword").value = "";
+        document.getElementById("newPassword").value = "";
+        document.getElementById("confirmPassword").value = "";
+    } else {
+        alert(data.message);
+    }
+};
 </script>
+  <div id="passwordModal" class="modal" style="display:none;">
+  <div class="modal-content">
+    <h2>🔒 Change Password</h2>
+
+    <input type="password" id="currentPassword" placeholder="Current Password">
+
+    <input type="password" id="newPassword" placeholder="New Password">
+
+    <input type="password" id="confirmPassword" placeholder="Confirm New Password">
+
+    <div style="margin-top:15px; display:flex; gap:10px;">
+      <button id="savePasswordBtn" class="logout-btn">Save</button>
+      <button id="closePasswordBtn" class="logout-btn">Cancel</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
